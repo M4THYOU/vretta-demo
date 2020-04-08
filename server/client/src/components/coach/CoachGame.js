@@ -110,7 +110,7 @@ class CoachGame extends Component {
 
                     if (playerId === this.state.selectedPlayer) {
                         let currChat = this.state.currentChat.slice();
-                        currChat.push([msg, false]);
+                        currChat.push(msg);
 
                         // now update state of messages
                         this.setState({
@@ -127,7 +127,7 @@ class CoachGame extends Component {
                         if (typeof currChat === "undefined") {
                             currChat = [];
                         }
-                        currChat.push([msg, false]);
+                        currChat.push(msg);
 
                         this.setState({
                             messages: update(this.state.messages, {[playerId]: {$set: currChat}}),
@@ -216,35 +216,61 @@ class CoachGame extends Component {
         let currChat = this.state.currentChat.slice();
 
         if (showBroadcasts) {
-            const newMsg = [message, true, true];
+            const newMsg = {
+                msg: message,
+                isBroadcast: true,
+                sender: sender,
+                date: Date()
+            };
             currChat.push(newMsg); // third element indicates it's a broadcast message.
 
             // in this case, update broadcasts state too.
             let currBroadcasts = this.state.broadcasts.slice();
             currBroadcasts.push(newMsg);
             this.setState({ broadcasts: currBroadcasts });
-        } else {
-            currChat.push([message, true]);
-        }
 
-        this.setState({
-            messages: update(this.state.messages, {[receiver]: {$set: currChat}}),
-            currentChat: currChat,
-            currentMessage: ''
-        });
+            // update each player chat in the client
+            let newMessages = {};
+            this.state.players.forEach(player => {
+                if (this.state.messages[player]) {
 
-        if (showBroadcasts) { // message to all players
+                    console.log('XX');
+                    let playerChat = this.state.messages[player].slice();
+                    playerChat.push(newMsg);
+                    newMessages[player] = playerChat;
+
+                } else if (player !== "placeholder") { // it must be player with no field in messages.
+                    console.log('YY');
+                    newMessages[player] = [newMsg];
+                }
+            });
+
+            console.log(this.state.messages);
+            console.log(newMessages);
+            this.setState({
+                messages: newMessages,
+            });
+            console.log(this.state.messages);
 
             if (this.state.socket) {
                 const data = {
                     "message": message,
-                    "gameId": gameId
+                    "gameId": gameId,
+                    "coachId": sender
                 };
 
                 this.state.socket.json({action: "broadcast", data: data });
             }
 
-        } else { // message to 1 player.
+        } else {
+            const newMsg = {
+                msg: message,
+                isBroadcast: false,
+                sender: sender,
+                date: Date()
+            };
+            currChat.push(newMsg);
+
             if (this.state.socket) {
                 const data = {
                     "coachId": sender,
@@ -256,7 +282,18 @@ class CoachGame extends Component {
                 this.state.socket.json({action: "messageFromCoach", data: data });
             }
 
+            this.setState({
+                messages: update(this.state.messages, {[receiver]: {$set: currChat}}),
+                currentChat: currChat,
+                currentMessage: ''
+            });
+
         }
+
+        this.setState({
+            currentChat: currChat,
+            currentMessage: ''
+        });
 
     }
 
@@ -275,8 +312,8 @@ class CoachGame extends Component {
         })
     }
 
-    renderMarginCol(msg) {
-        if (msg[1]) {
+    renderMarginCol(fromMe) {
+        if (fromMe) {
             return (
                 <Col>
 
@@ -285,9 +322,9 @@ class CoachGame extends Component {
         }
     }
 
-    renderBroadcastBar(msg) {
+    renderBroadcastBar(isBroadcast) {
 
-        if (msg[2]) {
+        if (isBroadcast) {
             return (
                     <ListGroupItem className="my-broadcast-bar">
                     </ListGroupItem>
@@ -297,20 +334,29 @@ class CoachGame extends Component {
     }
 
     renderMsg(msg, index) {
+        const msg_s = msg.msg;
+        const isBroadcast = msg.isBroadcast;
+        const sender = msg.sender;
+        const date = msg.date;
+        const currentUid = localStorage.getItem('uid');
+
+        const fromMe = (sender === currentUid);
+
         let color = "secondary";
-        if (msg[1]) {
+        if (fromMe) {
             color = "info";
         }
 
         return (
             <Row key={ index }>
-                { this.renderMarginCol(msg) }
+                { this.renderMarginCol(fromMe) }
                 <Col sm='auto' className="no-margin-message">
+                    { date }
                     <ListGroupItem color={ color } key={ index }>
-                        { msg[0] }
+                        { msg_s }
                     </ListGroupItem>
                 </Col>
-                { this.renderBroadcastBar(msg) }
+                { this.renderBroadcastBar(isBroadcast) }
             </Row>
         )
     }

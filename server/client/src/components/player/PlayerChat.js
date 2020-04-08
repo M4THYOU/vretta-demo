@@ -76,7 +76,7 @@ class PlayerChat extends Component {
                     });
 
                     let currChat = this.state.currentChat.slice();
-                    currChat.push([msg, true]);
+                    currChat.push(msg);
                     this.setState({
                         currentChat: currChat
                     });
@@ -89,7 +89,7 @@ class PlayerChat extends Component {
                     });
 
                     let currChat = this.state.currentChat.slice();
-                    currChat.push([msg, true, true]);
+                    currChat.push(msg);
                     this.setState({
                         currentChat: currChat
                     });
@@ -116,9 +116,16 @@ class PlayerChat extends Component {
         const message = this.state.currentMessage;
         const gameId = this.state.gameId;
 
+        const newMsg = {
+            msg: message,
+            isBroadcast: false,
+            sender: sender,
+            date: Date()
+        };
+
         // update the current client's chat.
         let currChat = this.state.currentChat.slice();
-        currChat.push([message, false]);
+        currChat.push(newMsg);
         this.setState({
             currentChat: currChat,
             currentMessage: ''
@@ -146,8 +153,8 @@ class PlayerChat extends Component {
         })
     }
 
-    renderMarginCol(msg) {
-        if (!msg[1]) {
+    renderMarginCol(fromMe) {
+        if (fromMe) {
             return (
                 <Col>
 
@@ -156,9 +163,9 @@ class PlayerChat extends Component {
         }
     }
 
-    renderBroadcastBar(msg) {
+    renderBroadcastBar(isBroadcast) {
 
-        if (msg[2]) {
+        if (isBroadcast) {
             return (
                 <ListGroupItem className="not-my-broadcast-bar">
                 </ListGroupItem>
@@ -167,17 +174,26 @@ class PlayerChat extends Component {
 
     }
     renderMsg(msg, index) {
+        const msg_s = msg.msg;
+        const isBroadcast = msg.isBroadcast;
+        const sender = msg.sender;
+        const date = msg.date;
+        const currentUid = localStorage.getItem('uid');
+
+        const fromMe = (sender === currentUid);
+
         let color = "secondary";
-        if (!msg[1]) {
+        if (fromMe) {
             color = "info";
         }
         return (
             <Row key={ index }>
-                { this.renderMarginCol(msg) }
-                { this.renderBroadcastBar(msg) }
+                { this.renderMarginCol(fromMe) }
+                { this.renderBroadcastBar(isBroadcast) }
                 <Col sm='auto' className="no-margin-message">
+                    { date }
                     <ListGroupItem color={ color } key={ index }>
-                        { msg[0] }
+                        { msg_s }
                     </ListGroupItem>
                 </Col>
             </Row>

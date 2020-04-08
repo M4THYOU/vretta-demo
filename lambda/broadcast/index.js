@@ -9,6 +9,7 @@ exports.handler = (event, context, callback) => {
 
     const msg = body.data.message;
     const gameId = body.data.gameId;
+    const coachId = body.data.coachId;
 
     console.log("msg:", msg);
     console.log("gameId:", gameId);
@@ -18,6 +19,13 @@ exports.handler = (event, context, callback) => {
         "Key": {
             "gameId": gameId
         }
+    };
+
+    const msgObj = {
+        "msg": msg,
+        "sender": coachId,
+        "isBroadcast": true,
+        "date": Date()
     };
 
     DDB.get(getParams, function(err, data) {
@@ -34,7 +42,7 @@ exports.handler = (event, context, callback) => {
             const messageData = {
                 "eventType": "broadcast",
                 "Attributes": {
-                    "message": msg
+                    "message": msgObj
                 }
             };
 
@@ -55,7 +63,7 @@ exports.handler = (event, context, callback) => {
                     }
                 });
 
-                data.Item.messages[key].push([msg, true, true]);
+                data.Item.messages[key].push(msgObj);
             }
 
             console.log(data.Item.messages);
@@ -68,7 +76,7 @@ exports.handler = (event, context, callback) => {
                 "UpdateExpression": "set messages = :newMessages, broadcasts = list_append(broadcasts, :new_msg)",
                 "ExpressionAttributeValues": {
                     ":newMessages": data.Item.messages,
-                    ":new_msg": [[msg, true, true]]
+                    ":new_msg": [msgObj]
                 },
                 "ReturnValues": "ALL_NEW"
             };

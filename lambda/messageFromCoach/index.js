@@ -17,6 +17,13 @@ exports.handler = (event, context, callback) => {
     console.log("msg:", msg);
     console.log("gameId:", gameId);
 
+    const msgObj = {
+        "msg": msg,
+        "sender": coachId,
+        "isBroadcast": false,
+        "date": Date()
+    };
+
     const updateParams = {
         "TableName": "games",
         "Key": {
@@ -27,7 +34,7 @@ exports.handler = (event, context, callback) => {
             "#player": playerId
         },
         "ExpressionAttributeValues": {
-            ":new_message": [[msg, true]],
+            ":new_message": [msgObj],
         },
         "ReturnValues": "ALL_NEW"
     };
@@ -48,7 +55,7 @@ exports.handler = (event, context, callback) => {
             const coachData = {
                 "eventType": "message",
                 "Attributes": {
-                    "message": msg
+                    "message": msgObj
                 }
             };
 

@@ -14,6 +14,13 @@ exports.handler = (event, context, callback) => {
     console.log("msg:", msg);
     console.log("gameId:", gameId);
 
+    const msgObj = {
+        "msg": msg,
+        "sender": playerId,
+        "isBroadcast": false,
+        "date": Date()
+    };
+
     const updateParams = {
         "TableName": "games",
         "Key": {
@@ -24,11 +31,11 @@ exports.handler = (event, context, callback) => {
             "#player": playerId
         },
         "ExpressionAttributeValues": {
-            ":new_message": [[msg, false]],
+            ":new_message": [msgObj],
             ":unread": true
         },
         "ReturnValues": "ALL_NEW"
-    }
+    };
 
     DDB.update(updateParams, function(err, data) {
         if (err) {
@@ -46,7 +53,7 @@ exports.handler = (event, context, callback) => {
             const coachData = {
                 "eventType": "message",
                 "Attributes": {
-                    "message": msg,
+                    "message": msgObj,
                     "playerId": playerId
                 }
             };
